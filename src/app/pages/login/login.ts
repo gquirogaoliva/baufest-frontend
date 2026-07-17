@@ -1,5 +1,6 @@
 import { Component, ElementRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 
 import { AuthService } from '../../services/auth';
 
@@ -12,6 +13,7 @@ import { AuthService } from '../../services/auth';
 export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly passwordVisible = signal(false);
@@ -50,6 +52,7 @@ export class Login {
       },
       complete: () => {
         this.isSubmitting.set(false);
+        this.router.navigate(['/dashboard']);
       },
     });
   }

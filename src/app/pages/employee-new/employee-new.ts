@@ -48,7 +48,7 @@ const AREA_OPTIONS = [
 
 const PEC_OPTIONS: PecOption[] = [
   { name: 'Guadalupe Quiroga Oliva', role: 'Engineering Manager' },
-  { name: 'Melina Casachica', role: 'RRHH Baufest' },
+  { name: 'Melina Casagrande', role: 'RRHH Baufest' },
   { name: 'Martín Rodríguez', role: 'Tech Lead' },
   { name: 'Ana Gómez', role: 'Product Manager' },
   { name: 'Carlos Fernández', role: 'Data Lead' },
