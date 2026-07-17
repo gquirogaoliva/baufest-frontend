@@ -1,0 +1,232 @@
+<div class="employee-detail-page">
+  <app-header title="Detalle de empleado" [showBack]="true" />
+
+  <main class="employee-detail-page__main">
+    @if (!detail) {
+      <div class="not-found">
+        <p class="text-body-l">No encontramos a este empleado.</p>
+        <a class="text-link" routerLink="/empleados">Volver al listado</a>
+      </div>
+    } @else {
+      @if (reminderJustSent()) {
+        <app-toast [message]="'Recordatorio enviado a ' + detail.email" />
+      }
+
+      <div class="employee-detail-grid">
+        <section class="card profile-card">
+          <div class="profile-card__header">
+            <div class="avatar avatar--lg" aria-hidden="true">{{ detail.initials }}</div>
+            <h2 class="text-h2 profile-card__name">{{ detail.name }}</h2>
+            <p class="text-body-m profile-card__role">{{ detail.role }} · {{ detail.area }}</p>
+            <p class="text-body-s profile-card__joined">Ingresó el {{ detail.joinDateLabel }}</p>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="profile-card__section">
+            <h3 class="text-h4">Contacto</h3>
+            <p class="contact-line">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 6.5 12 13l8-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="text-body-m">{{ detail.email }}</span>
+            </p>
+            <p class="contact-line">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6.5 3.5c.6 1.4 1.4 2.7 2.4 3.9.4.5.4 1.1-.1 1.6l-1.3 1.3a12.6 12.6 0 0 0 5.7 5.7l1.3-1.3c.5-.5 1.1-.5 1.6-.1 1.2 1 2.5 1.8 3.9 2.4.8.3 1.1 1.2.7 1.9l-.8 1.5c-.3.6-1 1-1.7.9-7-1-12.6-6.6-13.6-13.6-.1-.7.3-1.4.9-1.7l1.5-.8c.7-.4 1.6-.1 1.9.7Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+              </svg>
+              <span class="text-body-m">{{ detail.phone }}</span>
+            </p>
+          </div>
+
+          <a class="btn-whatsapp" [href]="whatsappHref" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M17.6 6.3A8.4 8.4 0 0 0 4.7 16.8L4 20l3.3-.9a8.4 8.4 0 0 0 12.3-7.5c0-2.2-.9-4.3-2.5-5.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Contactar por WhatsApp
+          </a>
+          <button
+            type="button"
+            class="btn-secondary"
+            [class.btn-secondary--sent]="reminderJustSent()"
+            (click)="openReminderModal()"
+            [disabled]="!canSendReminder"
+            [attr.title]="canSendReminder ? null : 'Ya completó su onboarding'"
+          >
+            @if (reminderJustSent()) {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m5 12 5 5 9-10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Enviado
+            } @else {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 6.5 12 13l8-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Enviar recordatorio por mail
+            }
+          </button>
+
+          @if (visibleReminderHistory().length) {
+            <ul class="reminder-history">
+              @for (entry of visibleReminderHistory(); track entry) {
+                <li class="text-body-s reminder-history__item">{{ entry }}</li>
+              }
+            </ul>
+          }
+
+          <hr class="divider" />
+
+          <div class="profile-card__section">
+            <h3 class="text-h4">PEC asignado</h3>
+            <div class="pec-row">
+              <div class="avatar" aria-hidden="true">{{ detail.pec.initials }}</div>
+              <div>
+                <p class="text-label pec-row__name">{{ detail.pec.name }}</p>
+                <p class="text-body-s pec-row__role">{{ detail.pec.role }}</p>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="profile-card__section">
+            <div class="kit-header">
+              <h3 class="text-h4 kit-header__title">Setup de bienvenida</h3>
+            </div>
+            <div class="kit-name-row">
+              <p class="text-label">{{ detail.kit.name }}</p>
+              <span class="badge badge--{{ detail.kit.stage === 'preparacion' ? 'sin-iniciar' : detail.kit.stage === 'camino' ? 'en-progreso' : 'entregado' }}">
+                {{ kitStageLabel(detail.kit.stage) }}
+              </span>
+            </div>
+            <ul class="kit-items">
+              @for (item of detail.kit.items; track item) {
+                <li class="kit-items__item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M2 19h20" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <span class="text-body-m">{{ item }}</span>
+                </li>
+              }
+            </ul>
+
+            <div class="kit-stepper">
+              @for (stage of kitStages; track stage.key; let last = $last) {
+                <div class="kit-stepper__stage">
+                  <div class="kit-stepper__node kit-stepper__node--{{ stage.status }}">
+                    @if (stage.status === 'done') {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="m5 12 5 5 9-10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    } @else if (stage.status === 'active') {
+                      <span class="kit-stepper__dot"></span>
+                    }
+                  </div>
+                  @if (!last) {
+                    <div class="kit-stepper__line kit-stepper__line--{{ stage.status === 'done' ? 'done' : 'pending' }}"></div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="kit-stepper-labels">
+              @for (stage of kitStages; track stage.key) {
+                <div class="kit-stepper-labels__item">
+                  <p class="text-body-s kit-stepper-labels__label" [class.kit-stepper-labels__label--active]="stage.status === 'active'">{{ stage.label }}</p>
+                  <p class="text-body-s kit-stepper-labels__date">{{ stage.date ?? 'Pendiente' }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="card progress-card">
+          <div class="progress-card__header">
+            <h2 class="text-h2">Progreso del onboarding</h2>
+            <p class="text-body-m progress-card__stat">{{ completedCount }} de {{ detail.totalSteps }} pasos completados · {{ progressPercent }}%</p>
+          </div>
+
+          <div class="progress-bar progress-bar--lg">
+            <div class="progress-bar__fill" [style.--fill]="progressPercent / 100"></div>
+          </div>
+
+          <ul class="onboarding-steps">
+            @for (step of detail.steps; track step.label) {
+              <li class="onboarding-steps__item">
+                <span class="onboarding-steps__icon onboarding-steps__icon--{{ step.status === 'completado' || step.status === 'entregado' ? 'done' : step.status }}" aria-hidden="true">
+                  @if (step.status === 'completado' || step.status === 'entregado') {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="m5 12 5 5 9-10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  } @else if (step.status === 'en-progreso') {
+                    <span class="onboarding-steps__dot"></span>
+                  }
+                </span>
+                <span class="text-label onboarding-steps__label">{{ step.label }}</span>
+                <span class="badge badge--{{ step.status }}">{{ stepBadgeLabel(step.status) }}</span>
+                @if (step.date) {
+                  <span class="text-body-s onboarding-steps__date">{{ step.date }}</span>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+
+      <dialog
+        #reminderDialog
+        class="reminder-dialog"
+        (close)="showReminderModal.set(false)"
+        (click)="onDialogBackdropClick($event)"
+        aria-labelledby="reminder-dialog-title"
+      >
+        <div class="reminder-dialog__panel">
+          <div class="reminder-dialog__header">
+            <div>
+              <h3 id="reminder-dialog-title" class="text-h3">Vista previa del mail recordatorio</h3>
+              <p class="text-body-s reminder-dialog__subtitle">Este mail se enviará automáticamente a {{ detail.email }}</p>
+            </div>
+            <button type="button" class="reminder-dialog__close" (click)="closeReminderModal()" aria-label="Cerrar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m5 5 14 14M19 5 5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="mail-frame">
+            <div class="mail-frame__dots">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="mail-frame__header">
+              <span class="mail-frame__brand">Baufest</span>
+              <div class="mail-frame__accent"></div>
+            </div>
+            <div class="mail-frame__body">
+              <h4 class="text-h2 mail-frame__title">{{ detail.name.split(' ')[0] }}, te quedaron algunos pasos pendientes</h4>
+              <p class="text-body-m mail-frame__text">
+                Notamos que hace algunos días no avanzaste en tu onboarding. ¿Necesitás ayuda? Podés retomarlo cuando quieras desde el link de abajo.
+              </p>
+              <ul class="mail-frame__steps">
+                @for (step of pendingStepsForReminder; track step.label) {
+                  <li>
+                    <span class="mail-frame__step-icon" aria-hidden="true"></span>
+                    <span class="text-body-m">{{ step.label }}</span>
+                  </li>
+                }
+              </ul>
+              <span class="mail-frame__cta">Retomar mi onboarding</span>
+            </div>
+            <div class="mail-frame__footer text-body-s">Baufest · Buenos Aires, Argentina</div>
+          </div>
+
+          <div class="reminder-dialog__footer">
+            <button type="button" class="btn-secondary" (click)="closeReminderModal()">Cancelar</button>
+            <button type="button" class="btn-primary" (click)="sendReminder()">Enviar ahora</button>
+          </div>
+        </div>
+      </dialog>
+    }
+  </main>
+</div>

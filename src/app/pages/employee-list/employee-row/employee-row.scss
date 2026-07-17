@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.employee-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(150px, 1fr) auto 100px 20px;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-md) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out-quart);
+
+  &:hover {
+    background: var(--surface-base);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-pink);
+    outline-offset: -2px;
+  }
+}
+
+.employee-row--highlighted {
+  animation:
+    employee-row-enter 200ms var(--ease-out-quart),
+    employee-row-bg-fade 5000ms linear forwards;
+}
+
+@keyframes employee-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes employee-row-bg-fade {
+  from {
+    background-color: rgba(224, 255, 157, 0.15);
+  }
+  to {
+    background-color: var(--surface-card);
+  }
+}
+
+.employee-row__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.employee-row__names {
+  min-width: 0;
+}
+
+.employee-row__name-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.employee-row__meta {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-row__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.employee-row__fraction {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.employee-row__status {
+  justify-self: start;
+}
+
+.employee-row__date {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.employee-row__chevron {
+  color: var(--text-secondary);
+  justify-self: end;
+}
+
+@media (max-width: 900px) {
+  .employee-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'identity chevron'
+      'progress progress'
+      'status date';
+    row-gap: var(--space-sm);
+  }
+
+  .employee-row__identity {
+    grid-area: identity;
+  }
+
+  .employee-row__progress {
+    grid-area: progress;
+  }
+
+  .employee-row__status {
+    grid-area: status;
+  }
+
+  .employee-row__date {
+    grid-area: date;
+    justify-self: end;
+  }
+
+  .employee-row__chevron {
+    grid-area: chevron;
+  }
+}

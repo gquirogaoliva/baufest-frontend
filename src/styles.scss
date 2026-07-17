@@ -1,0 +1,306 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surfaces */
+  --surface-base: #F4F4F0;
+  --surface-card: #FAFAF7;
+  --surface-elevated: #FFFFFF;
+  --surface-overlay: rgba(0, 0, 0, 0.4);
+
+  /* Text */
+  --text-primary: #1A1A18;
+  --text-secondary: #6B6B65;
+  --text-disabled: #B8B8B2;
+
+  /* Accent */
+  --accent-lime: #E0FF9D;
+  --accent-lime-hover: #d4f590;
+  --accent-lime-40: rgba(224, 255, 157, 0.4);
+  --accent-pink: #FFA4E2;
+  --feedback-success: #7AE58C;
+  --feedback-error: #E03A3A;
+  --feedback-error-tint: rgba(224, 58, 58, 0.08);
+
+  /* Borders */
+  --border-default: #D9D9D9;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+
+  /* Badges — dark mode swaps text for the bright accent hue (see dark theme block); background tint is theme-invariant */
+  --badge-progreso-bg: rgba(255, 164, 226, 0.2);
+  --badge-progreso-text: #c4489a;
+  --badge-completado-bg: rgba(122, 229, 140, 0.2);
+  --badge-completado-text: #2d8a42;
+  --badge-sin-iniciar-bg: #545454;
+  --badge-sin-iniciar-text: #FAFAF7;
+  --badge-reciente-bg: rgba(224, 255, 157, 0.3);
+  --badge-reciente-text: #5a7a1a;
+
+  /* Spacing (4pt scale) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Radius */
+  --radius-input: 8px;
+  --radius-button: 8px;
+  --radius-card: 12px;
+  --radius-badge: 6px;
+  --radius-pill: 999px;
+
+  /* Motion */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Z-index scale */
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal-backdrop: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-tooltip: 60;
+}
+
+:root[data-theme='dark'] {
+  --surface-base: #0A0A10;
+  --surface-card: #12121A;
+  --surface-elevated: #1B1B23;
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+
+  --text-primary: #F0F0EC;
+  --text-secondary: #9C9C96;
+  --text-disabled: #55554F;
+
+  --border-default: rgba(255, 255, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  --feedback-error-tint: rgba(224, 58, 58, 0.16);
+
+  /* Dark-on-light-tint (light mode) inverts to light-on-dark-tint; background tint is unchanged.
+     Validated: en-progreso 6.80:1, completado 7.54:1, reciente 6.66:1 against the dark card surface. */
+  --badge-progreso-text: #FFA4E2;
+  --badge-completado-text: #7AE58C;
+  --badge-reciente-text: #E0FF9D;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text-primary);
+  background: var(--surface-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography roles used across screens */
+.text-h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.text-h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.text-body-l {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.text-body-m {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.text-body-s {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.text-h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.text-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.text-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  text-decoration: underline;
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-pink);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: var(--accent-lime-40);
+  border: 1.5px solid var(--accent-lime);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+
+  &--lg {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    font-size: 1.5rem;
+  }
+}
+
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border-default);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent-lime);
+  border-radius: var(--radius-pill);
+  transform: scaleX(var(--fill, 0));
+  transform-origin: left center;
+  transition: transform 300ms var(--ease-out-quart);
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  padding: var(--space-lg);
+}
+
+.card__title {
+  margin-bottom: var(--space-md);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  gap: var(--space-sm);
+
+  .card__title {
+    margin-bottom: 0;
+  }
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+
+  &--en-progreso {
+    background: var(--badge-progreso-bg);
+    color: var(--badge-progreso-text);
+  }
+
+  &--completado,
+  &--entregado {
+    background: var(--badge-completado-bg);
+    color: var(--badge-completado-text);
+  }
+
+  &--sin-iniciar,
+  &--pendiente {
+    background: var(--badge-sin-iniciar-bg);
+    color: var(--badge-sin-iniciar-text);
+  }
+
+  &--reciente {
+    background: var(--badge-reciente-bg);
+    color: var(--badge-reciente-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

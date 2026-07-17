@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "montserrat",
+        "reason": "Montserrat is the project's approved sole typeface per DESIGN.md, confirmed by user during /impeccable teach",
+        "createdAt": "2026-07-13T15:51:26.013Z"
+      }
+    ]
+  }
+}

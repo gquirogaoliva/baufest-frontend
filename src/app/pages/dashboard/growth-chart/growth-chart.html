@@ -1,0 +1,132 @@
+<div class="growth-chart">
+  <div class="growth-chart__header">
+    <h3 class="text-h4 growth-chart__label">Crecimiento Baufest 2024</h3>
+    <div class="growth-chart__header-right">
+      <ul class="growth-chart__legend">
+        <li class="growth-chart__legend-item">
+          <span class="growth-chart__swatch growth-chart__swatch--incorporaciones" aria-hidden="true"></span>
+          <span class="text-body-s">Incorporaciones</span>
+        </li>
+        <li class="growth-chart__legend-item">
+          <span class="growth-chart__swatch growth-chart__swatch--completados" aria-hidden="true"></span>
+          <span class="text-body-s">Completados</span>
+        </li>
+      </ul>
+      @if (yoyLabel()) {
+        <span class="growth-chart__yoy">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 16 10 10 14 14 20 6M20 6h-5M20 6v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          {{ yoyLabel() }}
+        </span>
+      }
+    </div>
+  </div>
+
+  <p class="growth-chart__hero">
+    <span class="growth-chart__hero-number">{{ total() }}</span>
+    <span class="text-body-m growth-chart__hero-label">incorporaciones en el año</span>
+  </p>
+
+  <div
+    class="growth-chart__plot"
+    tabindex="0"
+    role="img"
+    [attr.aria-label]="'Gráfico de incorporaciones y onboardings completados por mes. ' + total() + ' incorporaciones en el año. Datos disponibles en la tabla debajo del gráfico.'"
+    (pointermove)="onPointerMove($event)"
+    (pointerleave)="onPointerLeave()"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+    (keydown)="onKeydown($event)"
+  >
+    <svg [attr.viewBox]="viewBox" preserveAspectRatio="none" class="growth-chart__svg">
+      @for (tick of yTicks(); track tick.value) {
+        <line
+          class="growth-chart__gridline"
+          [attr.x1]="plotLeft"
+          [attr.x2]="plotRight"
+          [attr.y1]="tick.y"
+          [attr.y2]="tick.y"
+        />
+        <text
+          class="growth-chart__tick-label"
+          [attr.x]="plotLeft - 8"
+          [attr.y]="tick.y"
+          text-anchor="end"
+          dominant-baseline="middle"
+        >{{ tick.value }}</text>
+      }
+
+      <path class="growth-chart__area" [attr.d]="completadosAreaPath()" />
+      <path class="growth-chart__line growth-chart__line--incorporaciones" [attr.d]="incorporacionesPath()" />
+      <path class="growth-chart__line growth-chart__line--completados" [attr.d]="completadosPath()" />
+
+      @for (point of data(); track point.month; let i = $index) {
+        <text
+          class="growth-chart__tick-label"
+          [attr.x]="incorporacionesPoints()[i].x"
+          [attr.y]="plotBottom + 18"
+          text-anchor="middle"
+        >{{ point.month }}</text>
+      }
+
+      @if (hoveredPoint()) {
+        <line
+          class="growth-chart__crosshair"
+          [attr.x1]="hoveredX()"
+          [attr.x2]="hoveredX()"
+          [attr.y1]="12"
+          [attr.y2]="plotBottom"
+        />
+        <circle
+          class="growth-chart__dot growth-chart__dot--incorporaciones"
+          [attr.cx]="hoveredX()"
+          [attr.cy]="incorporacionesPoints()[hoveredIndex()!].y"
+          r="4"
+        />
+        <circle
+          class="growth-chart__dot growth-chart__dot--completados"
+          [attr.cx]="hoveredX()"
+          [attr.cy]="completadosPoints()[hoveredIndex()!].y"
+          r="4"
+        />
+      }
+    </svg>
+
+    @if (hoveredPoint()) {
+      <div class="growth-chart__tooltip" [style.left.%]="hoveredXPercent()">
+        <p class="text-label growth-chart__tooltip-month">{{ hoveredPoint()!.month }}</p>
+        <p class="growth-chart__tooltip-row">
+          <span class="growth-chart__swatch growth-chart__swatch--incorporaciones" aria-hidden="true"></span>
+          <strong>{{ hoveredPoint()!.incorporaciones }}</strong>
+          <span class="text-body-s">Incorporaciones</span>
+        </p>
+        <p class="growth-chart__tooltip-row">
+          <span class="growth-chart__swatch growth-chart__swatch--completados" aria-hidden="true"></span>
+          <strong>{{ hoveredPoint()!.completados }}</strong>
+          <span class="text-body-s">Completados</span>
+        </p>
+      </div>
+    }
+  </div>
+
+  <table class="growth-chart__table sr-only">
+    <caption>Incorporaciones y onboardings completados por mes, 2024</caption>
+    <thead>
+      <tr>
+        <th scope="col">Mes</th>
+        <th scope="col">Incorporaciones</th>
+        <th scope="col">Completados</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (point of data(); track point.month) {
+        <tr>
+          <th scope="row">{{ point.month }}</th>
+          <td>{{ point.incorporaciones }}</td>
+          <td>{{ point.completados }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

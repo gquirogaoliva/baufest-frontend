@@ -1,0 +1,113 @@
+:host {
+  display: block;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-lg) 40px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-header__title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.app-header__back {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out-quart), border-color 150ms var(--ease-out-quart);
+
+  &:hover {
+    background: var(--surface-base);
+    border-color: var(--text-disabled);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-pink);
+    outline-offset: 2px;
+  }
+}
+
+.app-header__title {
+  font-size: 1.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-shrink: 0;
+}
+
+.app-header__user-info {
+  text-align: right;
+}
+
+.app-header__user-name {
+  margin: 0;
+}
+
+.app-header__user-role {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.app-header__icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out-quart), border-color 150ms var(--ease-out-quart);
+
+  &:hover {
+    background: var(--surface-base);
+    border-color: var(--text-disabled);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-pink);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    padding: var(--space-md) var(--space-lg);
+  }
+}
+
+@media (max-width: 560px) {
+  .app-header {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .app-header__user-info {
+    display: none;
+  }
+}

@@ -1,0 +1,56 @@
+:host {
+  display: block;
+}
+
+.sidebar {
+  width: 88px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl) 0;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.sidebar__btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  border: 1.5px solid var(--border-default);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out-quart), transform 100ms var(--ease-out-quart);
+
+  &:hover {
+    background: var(--surface-card);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent-pink);
+    outline-offset: 2px;
+  }
+
+  &--active {
+    background: var(--accent-lime);
+    border: none;
+
+    &:hover {
+      background: var(--accent-lime-hover);
+    }
+  }
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    width: 64px;
+  }
+}

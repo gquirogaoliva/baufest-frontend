@@ -1,0 +1,29 @@
+<nav class="sidebar" aria-label="Acciones rápidas">
+  <button
+    type="button"
+    class="sidebar__btn"
+    [class.sidebar__btn--active]="active() === 'nuevo'"
+    [attr.aria-current]="active() === 'nuevo' ? 'page' : null"
+    (click)="goToNewEmployee()"
+    aria-label="Nuevo empleado"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button
+    type="button"
+    class="sidebar__btn"
+    [class.sidebar__btn--active]="active() === 'empleados'"
+    [attr.aria-current]="active() === 'empleados' ? 'page' : null"
+    (click)="goToEmployees()"
+    aria-label="Empleados"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="10" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M4.5 19c.6-3.2 3-5 5.5-5s4.9 1.8 5.5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="17.5" cy="16.5" r="3" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M19.8 18.8 22 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  </button>
+</nav>
