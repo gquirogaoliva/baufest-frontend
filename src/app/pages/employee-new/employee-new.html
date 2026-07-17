@@ -373,9 +373,17 @@
   </main>
 
   <footer class="employee-new-footer">
+    @if (submitError()) {
+      <p class="form-field__error" role="alert">{{ submitError() }}</p>
+    }
     <p class="text-body-s employee-new-footer__hint">Se enviará el mail automático con el link de onboarding</p>
     <button type="submit" form="employee-new-form" class="btn-primary employee-new-footer__submit" [disabled]="form.invalid || submitting()">
-      Guardar y enviar
+      @if (submitting()) {
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Guardando…</span>
+      } @else {
+        <span>Guardar y enviar</span>
+      }
     </button>
   </footer>
 </div>

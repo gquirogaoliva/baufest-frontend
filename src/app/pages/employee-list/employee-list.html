@@ -33,7 +33,7 @@
 
         <select class="filter-select" aria-label="Filtrar por área" (change)="onAreaFilterChange($event)">
           <option value="todas">Todas las áreas</option>
-          @for (area of areas; track area) {
+          @for (area of areas(); track area) {
             <option [value]="area">{{ area }}</option>
           }
         </select>
@@ -41,7 +41,7 @@
 
       <section class="card employee-table-card" aria-label="Listado de empleados">
         <div class="employee-table-card__header">
-          <p class="text-label">{{ totalCount }} empleados registrados</p>
+          <p class="text-label">{{ totalCount() }} empleados registrados</p>
           <p class="text-body-s employee-table-card__hint">Recientes primero, después el resto</p>
         </div>
 

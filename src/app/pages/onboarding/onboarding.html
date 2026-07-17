@@ -5,7 +5,7 @@
       <span>Onboarding</span>
     </div>
 
-    @if (detail) {
+    @if (detail(); as detail) {
       <div class="onboarding-header__user">
         <a class="contact-rrhh-btn" [href]="rrhhWhatsappHref" target="_blank" rel="noopener">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -19,14 +19,19 @@
     }
   </header>
 
-  @if (!detail) {
+  @if (loading()) {
+    <div class="onboarding-not-found">
+      <p class="text-body-l">Cargando…</p>
+    </div>
+  } @else if (!detail()) {
     <div class="onboarding-not-found">
       <p class="text-body-l">Este link no es válido o expiró.</p>
       <p class="text-body-m onboarding-not-found__hint">
         Si necesitás ayuda, escribinos a <a class="text-link" [href]="rrhhMailHref">rrhh&#64;baufest.com</a>.
       </p>
     </div>
-  } @else if (onboardingFinished()) {
+  } @else if (detail(); as detail) {
+    @if (onboardingFinished()) {
     <div class="finish-screen">
       <div class="finish-screen__icon" aria-hidden="true">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
@@ -53,15 +58,17 @@
             </span>
             <span class="text-body-m">RRHH te va a contactar para coordinar tu primer día.</span>
           </li>
-          <li>
-            <span class="finish-screen__list-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="10" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/>
-                <path d="M4.5 19c.6-3.2 3-5 5.5-5s4.9 1.8 5.5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-              </svg>
-            </span>
-            <span class="text-body-m">Tu PEC {{ detail.pec.name }} va a ser tu referente durante las primeras semanas.</span>
-          </li>
+          @if (detail.pec) {
+            <li>
+              <span class="finish-screen__list-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="10" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+                  <path d="M4.5 19c.6-3.2 3-5 5.5-5s4.9 1.8 5.5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="text-body-m">Tu PEC {{ detail.pec.name }} va a ser tu referente durante las primeras semanas.</span>
+            </li>
+          }
           <li>
             <span class="finish-screen__list-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -127,29 +134,31 @@
 
               <hr class="divider" />
 
-              <p class="text-h4">Tu referente durante el onboarding</p>
-              <div class="pec-block">
-                <div class="avatar" aria-hidden="true">{{ detail.pec.initials }}</div>
-                <div class="pec-block__info">
-                  <p class="text-label pec-block__name">{{ detail.pec.name }}</p>
-                  <p class="text-body-s pec-block__role">{{ detail.pec.role }}</p>
-                  <div class="pec-block__actions">
-                    <a class="pec-block__action" [href]="rrhhWhatsappHref" target="_blank" rel="noopener">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M17.6 6.3A8.4 8.4 0 0 0 4.7 16.8L4 20l3.3-.9a8.4 8.4 0 0 0 12.3-7.5c0-2.2-.9-4.3-2.5-5.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      WhatsApp
-                    </a>
-                    <a class="pec-block__action" [href]="rrhhMailHref">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
-                        <path d="M4 6.5 12 13l8-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      Mail
-                    </a>
+              @if (detail.pec) {
+                <p class="text-h4">Tu referente durante el onboarding</p>
+                <div class="pec-block">
+                  <div class="avatar" aria-hidden="true">{{ detail.pec.initials }}</div>
+                  <div class="pec-block__info">
+                    <p class="text-label pec-block__name">{{ detail.pec.name }}</p>
+                    <p class="text-body-s pec-block__role">{{ detail.pec.role }}</p>
+                    <div class="pec-block__actions">
+                      <a class="pec-block__action" [href]="rrhhWhatsappHref" target="_blank" rel="noopener">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M17.6 6.3A8.4 8.4 0 0 0 4.7 16.8L4 20l3.3-.9a8.4 8.4 0 0 0 12.3-7.5c0-2.2-.9-4.3-2.5-5.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        WhatsApp
+                      </a>
+                      <a class="pec-block__action" [href]="rrhhMailHref">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                          <path d="M4 6.5 12 13l8-6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Mail
+                      </a>
+                    </div>
                   </div>
                 </div>
-              </div>
+              }
 
               <p class="text-body-l onboarding-step__intro">
                 Estamos muy contentos de que te sumes al equipo. Este es tu espacio para completar tu proceso de
@@ -571,22 +580,28 @@
 
               <hr class="divider" />
 
-              <p class="text-label onboarding-step__kit-name">{{ detail.kit.name }}</p>
+              @if (detail.kit.name) {
+                <p class="text-label onboarding-step__kit-name">{{ detail.kit.name }}</p>
+              }
 
-              <p class="text-caption onboarding-step__kit-address-label">Dirección de entrega</p>
-              <p class="text-body-m onboarding-step__kit-address">{{ detail.kit.deliveryAddress }}</p>
+              @if (detail.kit.deliveryAddress) {
+                <p class="text-caption onboarding-step__kit-address-label">Dirección de entrega</p>
+                <p class="text-body-m onboarding-step__kit-address">{{ detail.kit.deliveryAddress }}</p>
+              }
 
-              <ul class="kit-items">
-                @for (item of detail.kit.items; track item) {
-                  <li class="kit-items__item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <rect x="3" y="4" width="18" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                      <path d="M2 19h20" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                    </svg>
-                    <span class="text-body-m">{{ item }}</span>
-                  </li>
-                }
-              </ul>
+              @if (detail.kit.items?.length) {
+                <ul class="kit-items">
+                  @for (item of detail.kit.items; track item) {
+                    <li class="kit-items__item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                        <path d="M2 19h20" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                      </svg>
+                      <span class="text-body-m">{{ item }}</span>
+                    </li>
+                  }
+                </ul>
+              }
 
               <div class="kit-stepper">
                 @for (stage of kitStages(); track stage.key; let last = $last) {
@@ -636,5 +651,6 @@
         }
       </main>
     </div>
+    }
   }
 </div>

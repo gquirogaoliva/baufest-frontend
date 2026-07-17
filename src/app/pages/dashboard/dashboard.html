@@ -9,7 +9,7 @@
         <section class="card" aria-labelledby="activity-heading">
           <h2 id="activity-heading" class="text-h4 card__title">Actividad reciente</h2>
           <ul class="activity-list">
-            @for (employee of recentActivity; track employee.name) {
+            @for (employee of recentActivity(); track employee.name) {
               <li class="activity-item">
                 <div class="avatar" aria-hidden="true">{{ employee.initials }}</div>
                 <div class="activity-item__info">

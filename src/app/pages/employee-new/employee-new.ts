@@ -111,6 +111,7 @@ export class EmployeeNew {
 
   protected readonly submitted = signal(false);
   protected readonly submitting = signal(false);
+  protected readonly submitError = signal<string | null>(null);
 
   protected readonly pecOpen = signal(false);
   protected readonly pecQuery = signal('');
@@ -294,25 +295,34 @@ export class EmployeeNew {
     }
 
     this.submitting.set(true);
+    this.submitError.set(null);
 
     const { name, email, phone, role, area, pec, kitName } = this.form.getRawValue();
     const trimmedEmail = email!.trim();
 
-    const employee = this.employeeData.createEmployee({
-      name: name!.trim(),
-      email: trimmedEmail,
-      phone: phone!.trim(),
-      role: role!,
-      area: area!,
-      pec: pec!,
-      kitName: kitName!,
-      kitItems: this.kitItems()
-        .filter((item) => item.checked)
-        .map((item) => item.label),
-    });
-
-    this.toastQueue.queue(`Empleado registrado. Se envió el mail de bienvenida a ${trimmedEmail}`, employee.id);
-    this.router.navigateByUrl('/empleados');
+    this.employeeData
+      .createEmployee({
+        name: name!.trim(),
+        email: trimmedEmail,
+        phone: phone!.trim(),
+        role: role!,
+        area: area!,
+        pec: pec!,
+        kitName: kitName!,
+        kitItems: this.kitItems()
+          .filter((item) => item.checked)
+          .map((item) => item.label),
+      })
+      .subscribe({
+        next: (employee) => {
+          this.toastQueue.queue(`Empleado registrado. Se envió el mail de bienvenida a ${trimmedEmail}`, employee.id);
+          this.router.navigateByUrl('/empleados');
+        },
+        error: () => {
+          this.submitting.set(false);
+          this.submitError.set('No se pudo registrar el empleado. Intentá de nuevo.');
+        },
+      });
   }
 
   private focusFirstInvalidField(): void {

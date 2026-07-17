@@ -1,8 +1,15 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, catchError, map, of } from 'rxjs';
+
+import { environment } from '../../environments/environment';
 
 export type OnboardingStatus = 'en-progreso' | 'completado' | 'sin-iniciar';
 export type StepStatus = 'completado' | 'entregado' | 'en-progreso' | 'pendiente';
 export type KitStage = 'preparacion' | 'camino' | 'entregado';
+
+/** The 4 real onboarding steps the backend tracks (see paso keys in `pasosOnboarding`). */
+export type PasoKey = 'documentacion' | 'configuracion_equipo' | 'presentacion_equipo' | 'capacitacion_inicial';
 
 export interface Employee {
   id: string;
@@ -25,18 +32,53 @@ export interface OnboardingStep {
 
 export interface EmployeeDetail extends Employee {
   email: string;
-  phone: string;
-  pec: { initials: string; name: string; role: string };
+  /** Not tracked by the backend — only ever set client-side, never persisted or refetched. */
+  phone?: string;
+  pec?: { initials: string; name: string; role: string };
   kit: {
-    name: string;
-    items: string[];
+    name?: string;
+    items?: string[];
     stage: KitStage;
-    dates: { preparacion: string; camino: string | null; entregado: string | null };
-    deliveryAddress: string;
+    dates: { preparacion: string | null; camino: string | null; entregado: string | null };
+    deliveryAddress?: string;
   };
   steps: OnboardingStep[];
 }
 
+export interface NewEmployeeInput {
+  name: string;
+  email: string;
+  /** Collected by the form for UX parity, but the backend has no field for it — never sent. */
+  phone: string;
+  role: string;
+  area: string;
+  pec: { name: string; role: string };
+  kitName: string;
+  kitItems: string[];
+}
+
+interface BackendPaso {
+  paso: string;
+  completado: boolean;
+}
+
+interface BackendEmployee {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  puesto: string;
+  area: string;
+  fechaIngreso: string;
+  token: string;
+  estadoOnboarding: string;
+  pasosOnboarding: BackendPaso[];
+  kitEstado: string;
+}
+
+/** The UI keeps its original 6-step onboarding narrative (richer than the backend's 4 generic
+ * steps), so each UI step is force-mapped onto the closest real backend paso for persistence —
+ * several UI steps can share one backend key, which means they'll flip to "completado" together. */
 const STEP_LABELS = [
   'Bienvenida',
   'Datos personales',
@@ -46,34 +88,29 @@ const STEP_LABELS = [
   'Setup de bienvenida',
 ];
 
-const DEFAULT_PEC = { initials: 'GQO', name: 'Guadalupe Quiroga Oliva', role: 'Engineering Manager' };
-const DEFAULT_KIT_ITEMS = ['MacBook Pro', 'Mouse Magic', 'AirPods Pro', 'Merch Baufest'];
-const DEFAULT_KIT_DELIVERY_ADDRESS = 'Av. Corrientes 1234, CABA';
-const JOIN_MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+export const STEP_TO_BACKEND_PASO: Record<string, PasoKey> = {
+  Bienvenida: 'presentacion_equipo',
+  'Datos personales': 'documentacion',
+  'Datos de facturación': 'documentacion',
+  'Datos para obra social': 'documentacion',
+  'Cursos obligatorios': 'capacitacion_inicial',
+  'Setup de bienvenida': 'configuracion_equipo',
+};
 
-export interface NewEmployeeInput {
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  area: string;
-  pec: { name: string; role: string };
-  kitName: string;
-  kitItems: string[];
-}
+const STATUS_MAP: Record<string, OnboardingStatus> = {
+  pendiente: 'sin-iniciar',
+  'en progreso': 'en-progreso',
+  completado: 'completado',
+};
 
-function slugify(name: string): string {
-  return name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
+const KIT_STAGE_MAP: Record<string, KitStage> = {
+  pendiente: 'preparacion',
+  enviado: 'camino',
+  entregado: 'entregado',
+};
 
-function emailFor(name: string): string {
-  return `${slugify(name).replace(/-/g, '.')}@baufest.com`;
-}
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const RECENT_THRESHOLD_DAYS = 30;
 
 function initialsFor(name: string): string {
   const words = name.trim().split(/\s+/);
@@ -82,92 +119,76 @@ function initialsFor(name: string): string {
   return (first + last).toUpperCase();
 }
 
-function todayJoinLabel(): string {
-  const now = new Date();
-  return `${now.getDate()} ${JOIN_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+function joinDateLabel(fechaIngreso: string): string {
+  const [year, month, day] = fechaIngreso.split('-').map(Number);
+  return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
-/** Backend isn't built yet. This is the single canonical employee dataset — the
- * Dashboard's "Actividad reciente" / "Alertas" and the Employees screens all read
- * from here so names, progress, and dates never drift out of sync across screens. */
+function isRecent(fechaIngreso: string): boolean {
+  const diffDays = (Date.now() - new Date(fechaIngreso).getTime()) / 86_400_000;
+  return diffDays <= RECENT_THRESHOLD_DAYS;
+}
+
+function pasoCompletado(pasos: BackendPaso[], key: PasoKey): boolean {
+  return pasos.some((p) => p.paso === key && p.completado);
+}
+
+function deriveSteps(pasos: BackendPaso[], kitEstado: string): OnboardingStep[] {
+  return STEP_LABELS.map((label) => {
+    if (label === 'Setup de bienvenida') {
+      const status: StepStatus =
+        kitEstado === 'entregado' ? 'entregado' : pasoCompletado(pasos, 'configuracion_equipo') ? 'completado' : 'pendiente';
+      return { label, status, date: null };
+    }
+    const backendKey = STEP_TO_BACKEND_PASO[label];
+    return { label, status: pasoCompletado(pasos, backendKey) ? 'completado' : 'pendiente', date: null };
+  });
+}
+
+function toEmployee(be: BackendEmployee): Employee {
+  const name = `${be.nombre} ${be.apellido}`;
+  const steps = deriveSteps(be.pasosOnboarding, be.kitEstado);
+  const completedSteps = steps.filter((s) => s.status === 'completado' || s.status === 'entregado').length;
+  return {
+    id: be.token,
+    initials: initialsFor(name),
+    name,
+    role: be.puesto,
+    area: be.area,
+    completedSteps,
+    totalSteps: steps.length,
+    status: STATUS_MAP[be.estadoOnboarding] ?? 'sin-iniciar',
+    recent: isRecent(be.fechaIngreso),
+    joinDateLabel: joinDateLabel(be.fechaIngreso),
+  };
+}
+
+function toEmployeeDetail(be: BackendEmployee): EmployeeDetail {
+  return {
+    ...toEmployee(be),
+    email: be.email,
+    kit: {
+      stage: KIT_STAGE_MAP[be.kitEstado] ?? 'preparacion',
+      dates: { preparacion: null, camino: null, entregado: null },
+    },
+    steps: deriveSteps(be.pasosOnboarding, be.kitEstado),
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class EmployeeDataService {
-  private readonly employees: Employee[] = [
-    this.emp('VG', 'Valentina Gómez', 'UX Designer', 'AI Digital Products', 3, 'en-progreso', true, '14 Jul 2026'),
-    this.emp('ML', 'Martín López', 'Backend Dev', 'Ingeniería', 6, 'completado', true, '10 Jul 2026'),
-    this.emp('LF', 'Lucía Fernández', 'PM Senior', 'Producto', 0, 'sin-iniciar', true, '8 Jul 2026'),
-    this.emp('CM', 'Carolina Méndez', 'QA Engineer', 'Calidad', 2, 'en-progreso', true, '1 Jul 2026'),
-    this.emp('ST', 'Sofía Torres', 'Tech Lead', 'Ingeniería', 4, 'en-progreso', true, '25 Jun 2026'),
-    this.emp('RS', 'Rodrigo Sánchez', 'Frontend Dev', 'Ingeniería', 6, 'completado', true, '20 Jun 2026'),
-    this.emp('AM', 'Agustina Mora', 'Data Scientist', 'Analytics', 1, 'en-progreso', true, '15 Jun 2026'),
-    this.emp('PV', 'Pablo Vega', 'DevOps Engineer', 'Cloud & DevOps', 6, 'completado', true, '10 Jun 2026'),
-    this.emp('FR', 'Florencia Ríos', 'UX Designer', 'Producto', 0, 'sin-iniciar', true, '5 Jun 2026'),
-    this.emp('AC', 'Andrés Castillo', 'Full Stack Dev', 'Ingeniería', 6, 'completado', false, '20 May 2026'),
-    this.emp('BH', 'Beatriz Herrera', 'Project Manager', 'Delivery', 6, 'completado', false, '10 May 2026'),
-    this.emp('CB', 'Carlos Beltrán', 'QA Engineer', 'Calidad', 6, 'completado', false, '28 Abr 2026'),
-    this.emp('DF', 'Daniela Fuentes', 'Product Owner', 'Producto', 6, 'completado', false, '15 Abr 2026'),
-    this.emp('EG', 'Elena Gutiérrez', 'UX Designer', 'AI Digital Products', 6, 'completado', false, '2 Abr 2026'),
-  ];
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/empleados`;
 
-  /** Contact/PEC/kit data captured for employees created through the "Nuevo empleado"
-   * form — keyed by id, checked by deriveDetail before it falls back to the defaults. */
-  private readonly createdDetails = new Map<
-    string,
-    { email: string; phone: string; pec: { initials: string; name: string; role: string }; kit: { name: string; items: string[] } }
-  >();
-
-  private emp(
-    initials: string,
-    name: string,
-    role: string,
-    area: string,
-    completedSteps: number,
-    status: OnboardingStatus,
-    recent: boolean,
-    joinDateLabel: string,
-  ): Employee {
-    return { id: slugify(name), initials, name, role, area, completedSteps, totalSteps: 6, status, recent, joinDateLabel };
+  getAll(): Observable<Employee[]> {
+    return this.http.get<BackendEmployee[]>(this.baseUrl).pipe(map((list) => list.map(toEmployee)));
   }
 
-  getAll(): Employee[] {
-    return this.employees;
+  getRecentActivity(count = 4): Observable<Employee[]> {
+    return this.getAll().pipe(map((employees) => employees.filter((e) => e.recent).slice(0, count)));
   }
 
-  getAreas(): string[] {
-    return Array.from(new Set(this.employees.map((e) => e.area))).sort((a, b) => a.localeCompare(b));
-  }
-
-  /** Used by the "Nuevo empleado" form. Adds the employee to the top of the list
-   * (so it shows first under "Recientes") and remembers the contact/PEC/kit data
-   * the form captured, so getById reflects what was actually entered. */
-  createEmployee(input: NewEmployeeInput): Employee {
-    const employee = this.emp(
-      initialsFor(input.name),
-      input.name,
-      input.role,
-      input.area,
-      0,
-      'sin-iniciar',
-      true,
-      todayJoinLabel(),
-    );
-    this.employees.unshift(employee);
-    this.createdDetails.set(employee.id, {
-      email: input.email,
-      phone: input.phone,
-      pec: { initials: initialsFor(input.pec.name), name: input.pec.name, role: input.pec.role },
-      kit: { name: input.kitName, items: input.kitItems },
-    });
-    return employee;
-  }
-
-  /** Top N most recently joined — used by the Dashboard's "Actividad reciente". */
-  getRecentActivity(count = 4): Employee[] {
-    return this.employees.filter((e) => e.recent).slice(0, count);
-  }
-
-  /** Employees flagged as stalled. Picked from the real dataset so names never
-   * refer to someone who doesn't actually exist in the Employees list. */
+  /** The backend doesn't track last-activity/inactivity — kept as example data until that metric exists. */
   getInactivityAlerts(): { initials: string; name: string; daysInactive: number }[] {
     return [
       { initials: 'FR', name: 'Florencia Ríos', daysInactive: 18 },
@@ -175,79 +196,34 @@ export class EmployeeDataService {
     ];
   }
 
-  getById(id: string): EmployeeDetail | undefined {
-    const employee = this.employees.find((e) => e.id === id);
-    if (!employee) {
-      return undefined;
-    }
-    if (employee.id === 'valentina-gomez') {
-      return this.valentinaDetail(employee);
-    }
-    return this.deriveDetail(employee);
+  getById(token: string): Observable<EmployeeDetail | undefined> {
+    return this.http.get<BackendEmployee>(`${environment.apiUrl}/onboarding/${token}`).pipe(
+      map(toEmployeeDetail),
+      catchError(() => of(undefined)),
+    );
   }
 
-  /** The one fully-specified example from the approved reference. */
-  private valentinaDetail(employee: Employee): EmployeeDetail {
-    return {
-      ...employee,
-      email: 'valentina.gomez@baufest.com',
-      phone: '+54 11 1234-5678',
-      pec: DEFAULT_PEC,
-      kit: {
-        name: 'Kit Diseño',
-        items: DEFAULT_KIT_ITEMS,
-        stage: 'camino',
-        dates: { preparacion: '16 Jul 2026', camino: '17 Jul 2026', entregado: null },
-        deliveryAddress: DEFAULT_KIT_DELIVERY_ADDRESS,
-      },
-      steps: [
-        { label: 'Bienvenida', status: 'completado', date: '14 Jul 2026' },
-        { label: 'Datos personales', status: 'completado', date: '15 Jul 2026' },
-        { label: 'Datos de facturación', status: 'en-progreso', date: '18 Jul 2026' },
-        { label: 'Datos para obra social', status: 'pendiente', date: null },
-        { label: 'Cursos obligatorios', status: 'pendiente', date: null },
-        { label: 'Setup de bienvenida', status: 'entregado', date: '18 Jul 2026' },
-      ],
+  createEmployee(input: NewEmployeeInput): Observable<Employee> {
+    const [nombre, ...rest] = input.name.trim().split(/\s+/);
+    const apellido = rest.join(' ') || nombre;
+    const body = {
+      nombre,
+      apellido,
+      email: input.email,
+      puesto: input.role,
+      area: input.area,
+      fechaIngreso: new Date().toISOString().slice(0, 10),
     };
+    return this.http.post<BackendEmployee>(this.baseUrl, body).pipe(map(toEmployee));
   }
 
-  /** Generic-but-consistent detail for everyone else: only Valentina has bespoke
-   * contact/PEC/kit data in the reference, so the rest derive a believable
-   * equivalent from their status + completed-step count rather than 404-ing. */
-  private deriveDetail(employee: Employee): EmployeeDetail {
-    const steps: OnboardingStep[] = STEP_LABELS.map((label, index) => {
-      if (index < employee.completedSteps) {
-        const status: StepStatus = label === 'Setup de bienvenida' ? 'entregado' : 'completado';
-        return { label, status, date: employee.joinDateLabel };
-      }
-      if (index === employee.completedSteps && employee.status === 'en-progreso') {
-        return { label, status: 'en-progreso', date: employee.joinDateLabel };
-      }
-      return { label, status: 'pendiente', date: null };
-    });
+  completeStep(token: string, paso: PasoKey): Observable<EmployeeDetail> {
+    return this.http
+      .put<BackendEmployee>(`${environment.apiUrl}/onboarding/${token}/paso`, { paso, completado: true })
+      .pipe(map(toEmployeeDetail));
+  }
 
-    const kitStage: KitStage =
-      employee.status === 'completado' ? 'entregado' : employee.completedSteps >= 2 ? 'camino' : 'preparacion';
-
-    const created = this.createdDetails.get(employee.id);
-
-    return {
-      ...employee,
-      email: created?.email ?? emailFor(employee.name),
-      phone: created?.phone ?? '+54 11 1234-5678',
-      pec: created?.pec ?? DEFAULT_PEC,
-      kit: {
-        name: created?.kit.name ?? 'Kit Diseño',
-        items: created?.kit.items ?? DEFAULT_KIT_ITEMS,
-        stage: kitStage,
-        dates: {
-          preparacion: employee.joinDateLabel,
-          camino: kitStage !== 'preparacion' ? employee.joinDateLabel : null,
-          entregado: kitStage === 'entregado' ? employee.joinDateLabel : null,
-        },
-        deliveryAddress: DEFAULT_KIT_DELIVERY_ADDRESS,
-      },
-      steps,
-    };
+  sendReminder(email: string, nombre: string): Observable<{ success: boolean }> {
+    return this.http.post<{ success: boolean }>(`${environment.apiUrl}/mail/recordatorio`, { email, nombre });
   }
 }

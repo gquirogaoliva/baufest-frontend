@@ -1,36 +1,32 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, throwError, timer } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, map } from 'rxjs';
+
+import { environment } from '../../environments/environment';
 
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
-// Credenciales de demo (RRHH) para probar el flujo de login mientras no
-// existe backend. Quitar junto con DEMO_CREDENTIALS cuando se integre la API real.
-const DEMO_CREDENTIALS: LoginCredentials = {
-  email: 'melina.casagrande@baufest.com',
-  password: 'demo1234',
-};
+interface LoginResponse {
+  success: boolean;
+  token: string;
+  user: { email: string; nombre: string };
+}
 
-/**
- * Backend isn't built yet. login() simulates network latency and resolves
- * successfully only for DEMO_CREDENTIALS; any other input rejects with
- * "invalid credentials" so the error state is demonstrable.
- * Replace the body with a real HTTP call once the API exists.
- */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  login(credentials: LoginCredentials): Observable<void> {
-    const isDemoMatch =
-      credentials.email === DEMO_CREDENTIALS.email &&
-      credentials.password === DEMO_CREDENTIALS.password;
+  private readonly http = inject(HttpClient);
 
-    return timer(900).pipe(
-      switchMap(() =>
-        isDemoMatch ? of(undefined) : throwError(() => new Error('invalid-credentials'))
-      )
+  private readonly _token = signal<string | null>(null);
+  readonly token = this._token.asReadonly();
+
+  login(credentials: LoginCredentials): Observable<void> {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
+      map((response) => {
+        this._token.set(response.token);
+      }),
     );
   }
 }

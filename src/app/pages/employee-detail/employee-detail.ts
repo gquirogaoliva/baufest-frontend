@@ -1,7 +1,7 @@
 import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-import { EmployeeDataService, KitStage, StepStatus } from '../../services/employee-data';
+import { EmployeeDataService, EmployeeDetail as EmployeeDetailModel, KitStage, StepStatus } from '../../services/employee-data';
 import { AppHeader } from '../../shared/app-header/app-header';
 import { Toast } from '../../shared/toast/toast';
 
@@ -39,46 +39,57 @@ export class EmployeeDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly employeeData = inject(EmployeeDataService);
 
-  protected readonly detail = this.employeeData.getById(this.route.snapshot.paramMap.get('id') ?? '');
+  protected readonly detail = signal<EmployeeDetailModel | undefined>(undefined);
+  protected readonly loading = signal(true);
 
-  protected readonly completedCount =
-    this.detail?.steps.filter((s) => s.status === 'completado' || s.status === 'entregado').length ?? 0;
+  protected readonly completedCount = computed(
+    () => this.detail()?.steps.filter((s) => s.status === 'completado' || s.status === 'entregado').length ?? 0,
+  );
 
-  protected readonly progressPercent = this.detail
-    ? Math.round((this.completedCount / this.detail.totalSteps) * 100)
-    : 0;
+  protected readonly progressPercent = computed(() => {
+    const detail = this.detail();
+    return detail ? Math.round((this.completedCount() / detail.totalSteps) * 100) : 0;
+  });
 
-  protected readonly whatsappHref = this.detail
-    ? `https://wa.me/${this.detail.phone.replace(/\D/g, '')}`
-    : '';
+  protected readonly whatsappHref = computed(() => {
+    const phone = this.detail()?.phone;
+    return phone ? `https://wa.me/${phone.replace(/\D/g, '')}` : '';
+  });
 
-  protected readonly kitStages: { key: KitStage; label: string; date: string | null; status: 'done' | 'active' | 'pending' }[] =
-    this.detail
-      ? (['preparacion', 'camino', 'entregado'] as const).map((key) => {
-          const order: KitStage[] = ['preparacion', 'camino', 'entregado'];
-          const currentIndex = order.indexOf(this.detail!.kit.stage);
-          const keyIndex = order.indexOf(key);
-          // The terminal stage (entregado) reads as fully done, not "in progress" —
-          // "active" only makes sense for an intermediate current stage.
-          const isTerminal = currentIndex === order.length - 1;
-          const status =
-            keyIndex < currentIndex || (keyIndex === currentIndex && isTerminal)
-              ? 'done'
-              : keyIndex === currentIndex
-                ? 'active'
-                : 'pending';
-          return { key, label: KIT_STAGE_LABEL[key], date: this.detail!.kit.dates[key], status };
-        })
-      : [];
+  protected readonly kitStages = computed<
+    { key: KitStage; label: string; date: string | null; status: 'done' | 'active' | 'pending' }[]
+  >(() => {
+    const detail = this.detail();
+    if (!detail) {
+      return [];
+    }
+    const order: KitStage[] = ['preparacion', 'camino', 'entregado'];
+    const currentIndex = order.indexOf(detail.kit.stage);
+    // The terminal stage (entregado) reads as fully done, not "in progress" —
+    // "active" only makes sense for an intermediate current stage.
+    const isTerminal = currentIndex === order.length - 1;
+    return order.map((key) => {
+      const keyIndex = order.indexOf(key);
+      const status =
+        keyIndex < currentIndex || (keyIndex === currentIndex && isTerminal)
+          ? 'done'
+          : keyIndex === currentIndex
+            ? 'active'
+            : 'pending';
+      return { key, label: KIT_STAGE_LABEL[key], date: detail.kit.dates[key], status };
+    });
+  });
 
   // Onboarding fully done (status 'completado') means every step reads as
   // finished from the employee's side too, even the ones tagged 'entregado' —
   // sending a "pasos pendientes" reminder to someone who's 100% done doesn't
   // make sense, so the action is unavailable rather than showing a misleading list.
-  protected readonly canSendReminder = this.detail ? this.detail.status !== 'completado' : false;
+  protected readonly canSendReminder = computed(() => this.detail()?.status !== 'completado');
 
-  protected readonly pendingStepsForReminder =
-    this.detail && this.canSendReminder ? this.detail.steps.filter((s) => s.status !== 'completado') : [];
+  protected readonly pendingStepsForReminder = computed(() => {
+    const detail = this.detail();
+    return detail && this.canSendReminder() ? detail.steps.filter((s) => s.status !== 'completado') : [];
+  });
 
   protected readonly showReminderModal = signal(false);
   protected readonly reminderJustSent = signal(false);
@@ -103,6 +114,12 @@ export class EmployeeDetail {
       } else if (!this.showReminderModal() && dialog.open) {
         dialog.close();
       }
+    });
+
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.employeeData.getById(id).subscribe((detail) => {
+      this.detail.set(detail);
+      this.loading.set(false);
     });
   }
 
@@ -129,7 +146,13 @@ export class EmployeeDetail {
   }
 
   sendReminder(): void {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+
     this.showReminderModal.set(false);
+    this.employeeData.sendReminder(detail.email, detail.name).subscribe();
     this.reminderHistory.update((history) => [new Date(), ...history]);
 
     this.reminderJustSent.set(true);

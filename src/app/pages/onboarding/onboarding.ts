@@ -2,7 +2,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
-import { EmployeeDataService, KitStage } from '../../services/employee-data';
+import {
+  EmployeeDataService,
+  EmployeeDetail,
+  KitStage,
+  STEP_TO_BACKEND_PASO,
+} from '../../services/employee-data';
 
 type StepKey =
   | 'bienvenida'
@@ -92,23 +97,34 @@ export class Onboarding {
   protected readonly healthInsuranceOptions = HEALTH_INSURANCE_OPTIONS;
   protected readonly relationshipOptions = RELATIONSHIP_OPTIONS;
 
-  protected readonly detail = this.employeeData.getById(this.route.snapshot.paramMap.get('token') ?? '');
+  protected readonly detail = signal<EmployeeDetail | undefined>(undefined);
+  protected readonly loading = signal(true);
 
   protected readonly rrhhWhatsappHref = RRHH_WHATSAPP_HREF;
   protected readonly rrhhMailHref = RRHH_MAIL_HREF;
 
-  protected readonly firstName = computed(() => this.detail?.name.trim().split(/\s+/)[0] ?? '');
+  protected readonly firstName = computed(() => this.detail()?.name.trim().split(/\s+/)[0] ?? '');
 
   protected readonly activeStepKey = signal<StepKey>('bienvenida');
 
-  private readonly initiallyCompleted = new Set<StepKey>(
-    (this.detail?.steps ?? [])
-      .filter((s) => s.status === 'completado' || s.status === 'entregado')
-      .map((s) => this.keyForLabel(s.label))
-      .filter((k): k is StepKey => k !== null),
-  );
+  protected readonly completedSteps = signal<Set<StepKey>>(new Set());
 
-  protected readonly completedSteps = signal<Set<StepKey>>(new Set(this.initiallyCompleted));
+  constructor() {
+    const token = this.route.snapshot.paramMap.get('token') ?? '';
+    this.employeeData.getById(token).subscribe((detail) => {
+      this.detail.set(detail);
+      this.loading.set(false);
+      if (detail) {
+        const initiallyCompleted = new Set<StepKey>(
+          detail.steps
+            .filter((s) => s.status === 'completado' || s.status === 'entregado')
+            .map((s) => this.keyForLabel(s.label))
+            .filter((k): k is StepKey => k !== null),
+        );
+        this.completedSteps.set(initiallyCompleted);
+      }
+    });
+  }
 
   protected readonly sidebarSteps = computed(() => {
     const active = this.activeStepKey();
@@ -164,7 +180,7 @@ export class Onboarding {
 
   // Step 6 — Setup de bienvenida
   protected readonly kitStages = computed(() => {
-    const kit = this.detail?.kit;
+    const kit = this.detail()?.kit;
     if (!kit) {
       return [];
     }
@@ -198,8 +214,18 @@ export class Onboarding {
     this.activeStepKey.set(key);
   }
 
+  private persistStep(key: StepKey): void {
+    const token = this.detail()?.id;
+    const step = STEPS.find((s) => s.key === key);
+    if (!token || !step) {
+      return;
+    }
+    this.employeeData.completeStep(token, STEP_TO_BACKEND_PASO[step.label]).subscribe();
+  }
+
   private markCompleteAndAdvance(key: StepKey): void {
     this.completedSteps.update((set) => new Set(set).add(key));
+    this.persistStep(key);
     const index = STEPS.findIndex((s) => s.key === key);
     const next = STEPS[index + 1];
     if (next) {
@@ -287,6 +313,7 @@ export class Onboarding {
       return;
     }
     this.completedSteps.update((set) => new Set(set).add('setup-bienvenida'));
+    this.persistStep('setup-bienvenida');
     this.onboardingFinished.set(true);
   }
 }

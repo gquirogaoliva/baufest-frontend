@@ -27,8 +27,10 @@ export class EmployeeList {
   private readonly toastQueue = inject(ToastQueueService);
   private readonly router = inject(Router);
 
-  private readonly allEmployees = this.employeeData.getAll();
-  protected readonly areas = this.employeeData.getAreas();
+  private readonly allEmployees = signal<Employee[]>([]);
+  protected readonly areas = computed(() =>
+    Array.from(new Set(this.allEmployees().map((e) => e.area))).sort((a, b) => a.localeCompare(b)),
+  );
 
   private readonly queuedToast = this.toastQueue.consume();
 
@@ -46,6 +48,8 @@ export class EmployeeList {
       // the visual highlight is fully gone, so a later re-render can't replay it.
       this.highlightResetTimeoutId = setTimeout(() => this.highlightedEmployeeId.set(null), 5000);
     }
+
+    this.employeeData.getAll().subscribe((employees) => this.allEmployees.set(employees));
   }
 
   protected readonly searchTerm = signal('');
@@ -57,7 +61,7 @@ export class EmployeeList {
     const status = this.statusFilter();
     const area = this.areaFilter();
 
-    return this.allEmployees.filter((employee) => {
+    return this.allEmployees().filter((employee) => {
       const matchesTerm =
         !term ||
         normalize(employee.name).includes(term) ||
@@ -72,7 +76,7 @@ export class EmployeeList {
   protected readonly recentEmployees = computed(() => this.filtered().filter((e) => e.recent));
   protected readonly previousEmployees = computed(() => this.filtered().filter((e) => !e.recent));
 
-  protected readonly totalCount = this.allEmployees.length;
+  protected readonly totalCount = computed(() => this.allEmployees().length);
 
   onSearchInput(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
