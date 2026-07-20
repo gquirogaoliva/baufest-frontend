@@ -48,7 +48,7 @@ export interface EmployeeDetail extends Employee {
 export interface NewEmployeeInput {
   name: string;
   email: string;
-  /** Collected by the form for UX parity, but the backend has no field for it — never sent. */
+  /** Sent to the backend as `telefono`. */
   phone: string;
   role: string;
   area: string;
@@ -213,6 +213,7 @@ export class EmployeeDataService {
       puesto: input.role,
       area: input.area,
       fechaIngreso: new Date().toISOString().slice(0, 10),
+      telefono: input.phone,
     };
     return this.http.post<BackendEmployee>(this.baseUrl, body).pipe(map(toEmployee));
   }
