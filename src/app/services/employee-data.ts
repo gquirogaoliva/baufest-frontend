@@ -121,7 +121,7 @@ function initialsFor(name: string): string {
 }
 
 function joinDateLabel(fechaIngreso: string): string {
-  const [year, month, day] = fechaIngreso.split('-').map(Number);
+  const [year, month, day] = fechaIngreso.slice(0, 10).split('-').map(Number);
   return `${day} ${MONTHS[month - 1]} ${year}`;
 }
 
