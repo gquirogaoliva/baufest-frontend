@@ -67,6 +67,7 @@ interface BackendEmployee {
   nombre: string;
   apellido: string;
   email: string;
+  telefono: string;
   puesto: string;
   area: string;
   fechaIngreso: string;
@@ -167,6 +168,7 @@ function toEmployeeDetail(be: BackendEmployee): EmployeeDetail {
   return {
     ...toEmployee(be),
     email: be.email,
+    phone: be.telefono,
     kit: {
       stage: KIT_STAGE_MAP[be.kitEstado] ?? 'preparacion',
       dates: { preparacion: null, camino: null, entregado: null },
