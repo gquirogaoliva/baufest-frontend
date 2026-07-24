@@ -24,6 +24,19 @@ export interface Employee {
   joinDateLabel: string;
 }
 
+export interface PecOption {
+  name: string;
+  role: string;
+}
+
+export const PEC_OPTIONS: PecOption[] = [
+  { name: 'Guadalupe Quiroga Oliva', role: 'Engineering Manager' },
+  { name: 'Melina Casagrande', role: 'RRHH Baufest' },
+  { name: 'Martín Rodríguez', role: 'Tech Lead' },
+  { name: 'Ana Gómez', role: 'Product Manager' },
+  { name: 'Carlos Fernández', role: 'Data Lead' },
+];
+
 export interface OnboardingStep {
   label: string;
   status: StepStatus;
@@ -68,6 +81,7 @@ interface BackendEmployee {
   apellido: string;
   email: string;
   telefono: string;
+  pecNombre: string;
   puesto: string;
   area: string;
   fechaIngreso: string;
@@ -169,6 +183,13 @@ function toEmployeeDetail(be: BackendEmployee): EmployeeDetail {
     ...toEmployee(be),
     email: be.email,
     phone: be.telefono,
+    pec: be.pecNombre
+      ? {
+          initials: initialsFor(be.pecNombre),
+          name: be.pecNombre,
+          role: PEC_OPTIONS.find((p) => p.name === be.pecNombre)?.role ?? '',
+        }
+      : undefined,
     kit: {
       stage: KIT_STAGE_MAP[be.kitEstado] ?? 'preparacion',
       dates: { preparacion: null, camino: null, entregado: null },
@@ -216,6 +237,7 @@ export class EmployeeDataService {
       area: input.area,
       fechaIngreso: new Date().toISOString().slice(0, 10),
       telefono: input.phone,
+      pecNombre: input.pec.name,
     };
     return this.http.post<BackendEmployee>(this.baseUrl, body).pipe(map(toEmployee));
   }

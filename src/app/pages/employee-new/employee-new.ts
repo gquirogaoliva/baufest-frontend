@@ -2,14 +2,9 @@ import { Component, ElementRef, HostListener, computed, inject, signal, viewChil
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { EmployeeDataService } from '../../services/employee-data';
+import { EmployeeDataService, PecOption, PEC_OPTIONS } from '../../services/employee-data';
 import { ToastQueueService } from '../../services/toast-queue';
 import { AppHeader } from '../../shared/app-header/app-header';
-
-interface PecOption {
-  name: string;
-  role: string;
-}
 
 interface KitOption {
   name: string;
@@ -44,14 +39,6 @@ const AREA_OPTIONS = [
   'Cloud & DevOps',
   'Delivery',
   'Data',
-];
-
-const PEC_OPTIONS: PecOption[] = [
-  { name: 'Guadalupe Quiroga Oliva', role: 'Engineering Manager' },
-  { name: 'Melina Casagrande', role: 'RRHH Baufest' },
-  { name: 'Martín Rodríguez', role: 'Tech Lead' },
-  { name: 'Ana Gómez', role: 'Product Manager' },
-  { name: 'Carlos Fernández', role: 'Data Lead' },
 ];
 
 const KIT_OPTIONS: KitOption[] = [
