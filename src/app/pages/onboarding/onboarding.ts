@@ -235,9 +235,15 @@ export class Onboarding {
   private markCompleteAndAdvance(key: StepKey): void {
     this.completedSteps.update((set) => new Set(set).add(key));
     this.persistStep(key);
+
+    if (this.completedSteps().size === STEPS.length) {
+      this.finishOnboarding();
+      return;
+    }
+
     const index = STEPS.findIndex((s) => s.key === key);
     const next = STEPS[index + 1];
-    if (next) {
+    if (next && !this.completedSteps().has(next.key)) {
       this.activeStepKey.set(next.key);
     }
   }
@@ -315,7 +321,6 @@ export class Onboarding {
       return;
     }
     this.markCompleteAndAdvance('cursos');
-    this.finishOnboarding();
   }
 
   finishOnboarding(): void {
