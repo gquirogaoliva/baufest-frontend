@@ -14,8 +14,7 @@ type StepKey =
   | 'datos-personales'
   | 'datos-facturacion'
   | 'datos-obra-social'
-  | 'cursos'
-  | 'setup-bienvenida';
+  | 'cursos';
 
 interface StepDef {
   key: StepKey;
@@ -28,7 +27,6 @@ const STEPS: StepDef[] = [
   { key: 'datos-facturacion', label: 'Datos de facturación' },
   { key: 'datos-obra-social', label: 'Datos para obra social' },
   { key: 'cursos', label: 'Cursos obligatorios' },
-  { key: 'setup-bienvenida', label: 'Setup de bienvenida' },
 ];
 
 const KIT_STAGE_LABEL: Record<KitStage, string> = {
@@ -179,6 +177,21 @@ export class Onboarding {
   protected readonly allCoursesChecked = computed(() => this.courses().every((c) => c.checked));
 
   // Step 6 — Setup de bienvenida
+  protected readonly kitStatusMessage = computed(() => {
+    const kit = this.detail()?.kit;
+    if (!kit) {
+      return '';
+    }
+    const address = kit.deliveryAddress ? ` a ${kit.deliveryAddress}` : '';
+    if (kit.stage === 'entregado') {
+      return `Tu equipo ya fue entregado${address}. ¡Que lo disfrutes!`;
+    }
+    if (kit.stage === 'camino') {
+      return `Tu equipo está en camino${address}.`;
+    }
+    return `Estamos preparando tu equipo para enviarlo${address}.`;
+  });
+
   protected readonly kitStages = computed(() => {
     const kit = this.detail()?.kit;
     if (!kit) {
@@ -198,10 +211,6 @@ export class Onboarding {
       return { key, label: KIT_STAGE_LABEL[key], date: kit.dates[key], status };
     });
   });
-
-  protected readonly allPriorStepsCompleted = computed(() =>
-    STEPS.filter((s) => s.key !== 'setup-bienvenida').every((s) => this.completedSteps().has(s.key)),
-  );
 
   protected readonly onboardingFinished = signal(false);
 
@@ -306,14 +315,10 @@ export class Onboarding {
       return;
     }
     this.markCompleteAndAdvance('cursos');
+    this.finishOnboarding();
   }
 
   finishOnboarding(): void {
-    if (!this.allPriorStepsCompleted()) {
-      return;
-    }
-    this.completedSteps.update((set) => new Set(set).add('setup-bienvenida'));
-    this.persistStep('setup-bienvenida');
     this.onboardingFinished.set(true);
   }
 }
