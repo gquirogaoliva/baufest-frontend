@@ -89,6 +89,8 @@ interface BackendEmployee {
   estadoOnboarding: string;
   pasosOnboarding: BackendPaso[];
   kitEstado: string;
+  kitNombre: string | null;
+  kitItems: string[] | null;
 }
 
 /** The UI keeps its original 6-step onboarding narrative (richer than the backend's 4 generic
@@ -191,6 +193,8 @@ function toEmployeeDetail(be: BackendEmployee): EmployeeDetail {
         }
       : undefined,
     kit: {
+      name: be.kitNombre ?? undefined,
+      items: be.kitItems ?? undefined,
       stage: KIT_STAGE_MAP[be.kitEstado] ?? 'preparacion',
       dates: { preparacion: null, camino: null, entregado: null },
     },
@@ -238,6 +242,8 @@ export class EmployeeDataService {
       fechaIngreso: new Date().toISOString().slice(0, 10),
       telefono: input.phone,
       pecNombre: input.pec.name,
+      kitNombre: input.kitName,
+      kitItems: input.kitItems,
     };
     return this.http.post<BackendEmployee>(this.baseUrl, body).pipe(map(toEmployee));
   }
