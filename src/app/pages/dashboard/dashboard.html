@@ -10,26 +10,28 @@
           <h2 id="activity-heading" class="text-h4 card__title">Actividad reciente</h2>
           <ul class="activity-list">
             @for (employee of recentActivity(); track employee.name) {
-              <li class="activity-item">
-                <div class="avatar" aria-hidden="true">{{ employee.initials }}</div>
-                <div class="activity-item__info">
-                  <p class="text-label activity-item__name">{{ employee.name }}</p>
-                  <p class="text-body-s activity-item__meta">{{ employee.role }} · {{ employee.area }}</p>
-                  <div class="activity-item__progress">
-                    <div
-                      class="progress-bar"
-                      role="progressbar"
-                      [attr.aria-valuenow]="employee.completedSteps"
-                      [attr.aria-valuemin]="0"
-                      [attr.aria-valuemax]="employee.totalSteps"
-                      [attr.aria-label]="'Progreso de onboarding de ' + employee.name"
-                    >
-                      <div class="progress-bar__fill" [style.--fill]="employee.completedSteps / employee.totalSteps"></div>
+              <li>
+                <a class="activity-item" [routerLink]="['/empleados', employee.id]">
+                  <div class="avatar" aria-hidden="true">{{ employee.initials }}</div>
+                  <div class="activity-item__info">
+                    <p class="text-label activity-item__name">{{ employee.name }}</p>
+                    <p class="text-body-s activity-item__meta">{{ employee.role }} · {{ employee.area }}</p>
+                    <div class="activity-item__progress">
+                      <div
+                        class="progress-bar"
+                        role="progressbar"
+                        [attr.aria-valuenow]="employee.completedSteps"
+                        [attr.aria-valuemin]="0"
+                        [attr.aria-valuemax]="employee.totalSteps"
+                        [attr.aria-label]="'Progreso de onboarding de ' + employee.name"
+                      >
+                        <div class="progress-bar__fill" [style.--fill]="employee.completedSteps / employee.totalSteps"></div>
+                      </div>
+                      <span class="text-body-s activity-item__fraction">{{ employee.completedSteps }}/{{ employee.totalSteps }}</span>
                     </div>
-                    <span class="text-body-s activity-item__fraction">{{ employee.completedSteps }}/{{ employee.totalSteps }}</span>
                   </div>
-                </div>
-                <span class="badge badge--{{ employee.status }}">{{ statusLabel(employee.status) }}</span>
+                  <span class="badge badge--{{ employee.status }}">{{ statusLabel(employee.status) }}</span>
+                </a>
               </li>
             }
           </ul>

@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { DashboardDataService } from '../../services/dashboard-data';
 import { Employee, EmployeeDataService, OnboardingStatus } from '../../services/employee-data';
@@ -15,7 +15,7 @@ const STATUS_LABEL: Record<OnboardingStatus, string> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [GrowthChart, AppHeader, AppSidebar],
+  imports: [GrowthChart, AppHeader, AppSidebar, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
