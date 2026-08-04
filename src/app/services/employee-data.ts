@@ -9,7 +9,7 @@ export type StepStatus = 'completado' | 'entregado' | 'en-progreso' | 'pendiente
 export type KitStage = 'preparacion' | 'camino' | 'entregado';
 
 /** The 4 real onboarding steps the backend tracks (see paso keys in `pasosOnboarding`). */
-export type PasoKey = 'documentacion' | 'configuracion_equipo' | 'presentacion_equipo' | 'capacitacion_inicial';
+export type PasoKey = 'datos_personales' | 'datos_facturacion' | 'datos_obra_social' | 'configuracion_equipo' | 'presentacion_equipo' | 'capacitacion_inicial';
 
 export interface Employee {
   id: string;
@@ -105,9 +105,9 @@ const STEP_LABELS = [
 
 export const STEP_TO_BACKEND_PASO: Record<string, PasoKey> = {
   Bienvenida: 'presentacion_equipo',
-  'Datos personales': 'documentacion',
-  'Datos de facturación': 'documentacion',
-  'Datos para obra social': 'documentacion',
+  'Datos personales': 'datos_personales',
+  'Datos de facturación': 'datos_facturacion',
+  'Datos para obra social': 'datos_obra_social',
   'Cursos obligatorios': 'capacitacion_inicial',
   'Setup de bienvenida': 'configuracion_equipo',
 };
